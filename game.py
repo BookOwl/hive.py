@@ -4,14 +4,13 @@ import hive
 
 helptext = '''
 Help:
-Hive is a simple logic and math game. You play by entering the number of a tile (1 - 19).
+Hive is a simple logic and math game. You play by entering the row and column of a tile.
 This flips that tile, but it also flips other all the other tiles touching it.
-The coordinates of the hexes are
-  01 02 03
- 04 05 06 07
-08 09 10 11 12
- 13 14 15 16
-  17 18 19
+For example, the coordinates for a Hive game of size 2 are:
+  1,1 1,2
+2,1 2,2 2,3
+  3,1 3,2
+
 You start out with all the tiles set to 0. If you can get every tile set to 1, you win!
 
 Credits:
@@ -22,12 +21,13 @@ You can find the Scratch forum topic for discussing strategy at https://scratch.
 nummoves = 0
 
 def main():
-    game = hive.Hive()
-    printintro()
+    n = printintro()
+    game = hive.Hive(n)
     while True:
         printstatus(game)
         makemove(game)
         if game.won():
+            print(game)
             gameover()
         print()
 
@@ -35,7 +35,9 @@ def printintro():
     print("Hive - The Game")
     print("Ported from the Scratch game Hive by @silverdroid")
     print("Press h for help")
+    n = int(input("How large is the board? The original board is of size 3. "))
     print()
+    return n
 
 def printstatus(game):
     global nummoves
@@ -45,15 +47,16 @@ def printstatus(game):
 
 def makemove(game):
     global nummoves
-    move = input("Enter your move: ")
+    move = input("Enter your move: ").split(",")
+    row, col = move[0].strip(), move[1].strip()
     try:
-        game.makeMove(int(move))
+        game.makeMove(int(row) - 1, int(col) - 1)
     except ValueError:
         nummoves -= 1
         if move == 'h':
             print(helptext)
         else:
-            print("You did not enter a number between 1 and 19. Try again.")
+            print("You did not enter a valid coordinate. Try again.")
 
 def gameover():
     print("You won!")

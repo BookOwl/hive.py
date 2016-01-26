@@ -1,76 +1,95 @@
-class Hive:
-    def __init__(self):
-        "Create a new Hive game"
-        self.board = [False] * 19
+import copy
 
-    def makeMove(self, spot):
+class Hive:
+    def __init__(self, N):
+        "Create a new Hive game"
+        self.N = N
+        self.board = []
+        for i in range(N, 2*N -1):
+            self.board.append([False] * i)
+        self.board.append([False] * (2 * N -1))
+        self.board.extend(reversed(copy.deepcopy(self.board[:-1])))
+
+    def getSpot(self, x, y):
+        "Returns the state of the spot given by the zero-based coordinates x, y"
+        return self.board[x][y]
+
+    def setSpot(self, x, y, value):
+        "Sets the state of the spot given by the zero-based coordinates x, y to value"
+        self.board[x][y] = value
+
+    def makeMove(self, x, y):
         """Makes a move at the location given by spot, which must be an int in the range of 1 to 19, inclusive.
         Throws a ValueError given invalid input."""
-        if  spot == 1:
-            self._toggle([1,2,4,5])
-        elif spot == 2:
-            self._toggle([1, 2, 3, 5, 6])
-        elif spot == 3:
-            self._toggle([2,3,6,7])
-        elif spot == 4:
-            self._toggle([1,4,5,8,9])
-        elif spot == 5:
-            self._toggle([1,2,4,5,6,9,10])
-        elif spot == 6:
-            self._toggle([2,3,5,6,7,10,11])
-        elif spot == 7:
-            self._toggle([3,6,7,11,12])
-        elif spot == 8:
-            self._toggle([4,8,9,13])
-        elif spot == 9:
-            self._toggle([4,5,8,9,10,13,14])
-        elif spot == 10:
-            self._toggle([5,6,9,10,11,14,15])
-        elif spot == 11:
-            self._toggle([6,7,10,11,12,15,16])
-        elif spot == 12:
-            self._toggle([7,11,12,16])
-        elif spot == 13:
-            self._toggle([8,9,13,14,17])
-        elif spot == 14:
-            self._toggle([9,10,13,14,15,17,18])
-        elif spot == 15:
-            self._toggle([10,11,14,15,16,18,19])
-        elif spot == 16:
-            self._toggle([11,12,15,16,19])
-        elif spot == 17:
-            self._toggle([13,14,17,18])
-        elif spot == 18:
-            self._toggle([14,15,17,18,19])
-        elif spot == 19:
-            self._toggle([15,16,18,19])
-        else:
-            raise ValueError("Invalid Move!")
+        self._toggle(self.getNeighborhood(x, y))
 
     def makeMoves(self, moves):
         """Makes a series of moves given.
         Equivalent to
         for move in moves:
-            game.makeMove(move)"""
+            game.makeMove(*move)"""
         for move in moves:
-            self.makeMove(move)
+            self.makeMove(*move)
 
     def _toggle(self, spots):
         "Internal method. Toggles a spot on the board."
         for spot in spots:
-            self.board[spot-1] = not self.board[spot-1]
+            state = self.getSpot(spot[0], spot[1])
+            self.setSpot(spot[0], spot[1], not state)
 
     def won(self):
         "Returns True if the game is in a winning condition (all spots 1)"
-        return all(self.board)
+        for row in self.board:
+            if not all(row):
+                return False
+        return True
 
     def __str__(self):
         "Returns a properly formated string of the board"
+        b = []
+        for r in self.board:
+            b.append([str(int(i)) for i in r])
+
         s = ''
-        b = [str(int(s)) for s in self.board]
-        s += '  %s %s %s  \n' % tuple(b[:3])
-        s += ' %s %s %s %s \n' % tuple(b[3:7])
-        s += '%s %s %s %s %s\n' % tuple(b[7:12])
-        s += ' %s %s %s %s \n' % tuple(b[12:16])
-        s += '  %s %s %s' % tuple(b[16:])
-        return s
+        for (i, row) in enumerate(b[:self.N-1], start=1):
+            s += ' ' * (self.N - i)
+            s += ' '.join(row)
+            s += ' ' * (self.N - i)
+            s += '\n'
+        s += ' '.join(b[self.N - 1])
+        s += '\n'
+        for (i, row) in enumerate(b[self.N:], start=self.N+1):
+            s += ' ' * (i - self.N)
+            s += ' '.join(row)
+            s += ' ' * (i - self.N)
+            s += '\n'
+        return s[:-1]
+
+    def getNeighborhood(self, x, y):
+        m = self.N - 1
+        hood = [(x, y - 1), (x, y), (x, y + 1)]
+        if x > m:
+            hood.extend([(x - 1, y), (x - 1, y + 1), (x + 1, y - 1), (x + 1, y)])
+        elif x < m:
+            hood.extend([(x - 1, y - 1), (x - 1, y), (x + 1, y), (x + 1, y + 1)])
+        elif x == m:
+            hood.extend([(x - 1, y - 1), (x - 1, y), (x + 1, y - 1), (x + 1, y)])
+        for cord in tuple(hood):
+            if ((cord[0] < 0 or cord[1] < 0) or (cord[0] >= len(self.board) or cord[1] >= len(self.board[cord[0]]))):
+                hood.remove(cord)
+        return hood
+
+    def getPossibleMoves(self):
+        moves = []
+        for (x, row) in enumerate(self.board):
+            for y in range(len(row)):
+                moves.append((x,y))
+        return moves
+
+    @staticmethod
+    def numSpots(N):
+        "Returns the number of spots in a Hive board of size N."
+        if N == 1:
+            return 1
+        else:
+            return Hive.numSpots(N-1) + 6 * (N - 1)
